@@ -247,3 +247,38 @@ git push both main                                              # 一条命令�
 ```
 
 版本号见 [VERSION](VERSION)。
+
+---
+
+## 十、安装后检查清单
+
+装完建议过一遍这四项，都是实测踩过的坑：
+
+| # | 检查项 | 怎么查 / 怎么修 |
+|---|---|---|
+| 1 | 技能基础设施是启用的 | 用 `plugin_manager` 的 `list_plugins` 确认 `include:skill-filesystem`、`include:tool-skill`、`include:skill-badge` 均为 `enabled: true`。**未启用时技能目录为空，加载会报 unknown**，而 `~/.dsh/skills` 下已有的技能也会一起失效 |
+| 2 | 技能能被加载 | 在会话里执行 `skill: jiazu-xiuxian`，能返回技能正文即成功 |
+| 3 | 脚本能跑 | `python scripts/writing_check.py --help` 与 `python scripts/family_check.py --help` 均应输出中文用法、退出码 0 |
+| 4 | 平台默认分支是 `main` | 见下方说明 |
+
+### 关于默认分支（重要）
+
+推上去的分支叫 `main`，但仓库的**默认分支**由平台设置决定，git 改不了它：
+
+- **GitHub**：新建仓库默认已是 `main`，一般无需处理。若你的仓库默认是 `master`，去 `Settings → Branches → Default branch` 改成 `main`。
+- **Gitee**：建仓时若勾了「初始化仓库」，会生成一个空的 `master`（带一个 README 的初始提交），默认分支仍是 `master`——**这会导致访客打开仓库页看到的是空内容**，而你的代码在 `main` 上。
+  改法：`管理 → 仓库设置 → 默认分支` 选 `main`；顺手把无用的 `master` 删掉（`管理 → 分支管理`）。
+
+用 Gitee API 也可以改（需要个人令牌，勾 `projects` 权限）：
+
+```bash
+# 设默认分支为 main
+curl -X PATCH "https://gitee.com/api/v5/repos/<owner>/<repo>" \
+  -d "access_token=<你的令牌>&default_branch=main"
+
+# 删掉多余的 master 分支
+curl -X DELETE "https://gitee.com/api/v5/repos/<owner>/<repo>/branches/master" \
+  -d "access_token=<你的令牌>"
+```
+
+> 为什么不让脚本自动改：平台设置需要账号令牌，而令牌属于你的凭据，不应写进仓库或脚本里。
