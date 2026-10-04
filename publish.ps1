@@ -38,8 +38,17 @@ if (-not (Test-Path (Join-Path $Source 'SKILL.md'))) {
 
 function Invoke-Git {
     param([string[]]$GitArgs)
-    $out = & git @GitArgs 2>&1
-    $code = $LASTEXITCODE
+    # 关键：git 会把「Applied autostash.」「remote: ...」这类正常提示写到 stderr，
+    # 若此时 $ErrorActionPreference 为 Stop，PowerShell 会把它当成致命错误直接终止脚本。
+    # 所以调用期间临时降级，调用后恢复。
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $out = & git @GitArgs 2>&1
+        $code = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prev
+    }
     return [pscustomobject]@{ Output = ($out | Out-String).Trim(); Code = $code }
 }
 

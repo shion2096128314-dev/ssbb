@@ -129,6 +129,8 @@ python scripts/family_check.py --help
 shionsuwako/
 ├── SKILL.md                      技能入口：人设 / 开工六步 / 14 条硬纪律 / 输出格式
 ├── install.ps1                   一键安装到 DSH 技能根目录（含旧版备份）
+├── sync.ps1                      把本机在用的技能版本同步回仓库
+├── publish.ps1                   一条命令：同步 + 提交 + 双推 Gitee/GitHub
 ├── LICENSE                       MIT
 ├── VERSION                       版本号
 ├── references/
@@ -196,18 +198,52 @@ MIT License，见 [LICENSE](LICENSE)。
 
 ---
 
-## 九、更新
+## 九、更新与发布
 
-```bash
-cd shionsuwako
-git pull
-powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1   # 覆盖安装，旧版自动备份
-```
-
-维护者从安装目录同步回仓库（保持「仓库 = 本机在用版本」）：
+### 9.1 你自己改了技能内容（在 DSH 技能根目录里改的）
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\sync.ps1
+cd D:\小说\jiazu-xiuxian
+powershell -NoProfile -ExecutionPolicy Bypass -File .\publish.ps1 -Message "改了钩子打分规则"
+```
+
+`publish.ps1` 会依次做五件事：
+
+| 步骤 | 动作 |
+|---|---|
+| 1 | 校验仓库完整性、git 身份、技能安装目录 |
+| 2 | `git pull --rebase --autostash` 拉取远端最新（失败只警告，不中断） |
+| 3 | 把本机在用的技能内容同步回仓库（`SKILL.md`、`references`、`scripts`；技能包 README → `references/how-to-use.md`） |
+| 4 | 有改动才提交；`-Message` 不填则自动生成时间戳提交信息 |
+| 5 | 依次推送 `gitee` 与 `github`；任一失败会明确报出并给出单独重试命令，退出码 1 |
+
+常用变体：
+
+```powershell
+# 只同步 + 提交，先不推（想检查 diff 时用）
+powershell -NoProfile -ExecutionPolicy Bypass -File .\publish.ps1 -Message "wip" -NoPush
+
+# 从指定技能目录同步（默认取 ~/.dsh/skills/jiazu-xiuxian）
+powershell -NoProfile -ExecutionPolicy Bypass -File .\publish.ps1 -Message "同步" -Source "D:\小说\.dsh\skills\jiazu-xiuxian"
+
+# 跳过 pull（离线或刚拉过）
+powershell -NoProfile -ExecutionPolicy Bypass -File .\publish.ps1 -Message "同步" -SkipPull
+```
+
+### 9.2 别人更新了仓库，你要拉下来用
+
+```powershell
+cd D:\小说\jiazu-xiuxian
+git pull
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1    # 覆盖安装，旧版自动备份
+```
+
+### 9.3 只想手动来
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\sync.ps1   # 仅同步回仓库
+git add -A; git commit -m "更新说明"
+git push both main                                              # 一条命令双推（已配好双 pushurl）
 ```
 
 版本号见 [VERSION](VERSION)。
